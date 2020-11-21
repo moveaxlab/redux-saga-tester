@@ -1,5 +1,7 @@
 # redux-saga-tester
 
+> This is a fork of redux-saga-tester with integrated TypeScript support.
+
 Full redux environment testing helper for redux-saga.
 
 [redux-saga](https://github.com/yelouafi/redux-saga/) is a great library that provides an easy way to test your sagas step-by-step, but it's tightly coupled to the saga implementation. Try a non-breaking reorder of the internal `yield`s, and the tests will fail.
@@ -11,7 +13,13 @@ This tester library provides a full redux environment to run your sagas in, taki
 ## Installation
 
 ```
-$ npm install --save-dev redux-saga-tester
+$ npm install --save-dev @moveaxlab/redux-saga-tester
+```
+
+or
+
+```
+$ yarn add --dev @moveaxlab/redux-saga-tester
 ```
 
 ## Basic Example
@@ -54,7 +62,7 @@ Can be found under the `examples` directory.
 ```js
 import chaiAsPromised from 'chai-as-promised';
 import { call, take, put } from 'redux-saga/effects';
-import SagaTester from 'redux-saga-tester';
+import SagaTester from '@moveaxlab/redux-saga-tester';
 
 chai.use(chaiAsPromised);
 
