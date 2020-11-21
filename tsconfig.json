@@ -11,5 +11,5 @@
     "esModuleInterop": false,
     "strict": true
   },
-  "exclude": ["lib", "dist"]
+  "exclude": ["./dist"]
 }

@@ -1,3 +1,15 @@
+.idea/
+coverage/
+src/
+tests/
+
+.eslintignore
+.eslintrc.js
 .gitignore
-.babelrc
-pom.xml
+.lintstagedrc.js
+jest.config.js
+rollup.config.js
+tsconfig.*
+yarn.lock
+
+*.tgz

@@ -1,4 +1,4 @@
-import SagaTester, { resetAction } from '../src/SagaTester';
+import { SagaTester, resetAction } from '../src/SagaTester';
 import { Reducer } from 'redux';
 
 describe('SagaTester', () => {
@@ -18,7 +18,7 @@ describe('SagaTester', () => {
   });
 
   it('Accepts an empty object as an argument', () => {
-    expect(() => new SagaTester()).not.toThrow();
+    expect(() => new SagaTester({})).not.toThrow();
   });
 
   it('Populates store with a given initial state', () => {
@@ -125,7 +125,7 @@ describe('SagaTester', () => {
     };
     const sagaTester = new SagaTester();
     const promise = sagaTester.run(sagas);
-    expect(promise).toBeInstanceOf(Function);
+    expect(promise).toBeInstanceOf(Promise);
     expect(flag).toEqual(true);
   });
 

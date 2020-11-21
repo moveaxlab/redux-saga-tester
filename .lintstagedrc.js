@@ -1,4 +1,4 @@
 module.exports = {
-  "*.{js,jsx,ts,tsx}": "eslint --fix --max-warnings 0",
-  "*.{ts,tsx}": [() => "yarn test:types", "yarn test"]
+  "*.ts": "eslint --fix --max-warnings 0",
+  "*.ts": [() => "yarn test:types", "yarn test:unit"]
 };

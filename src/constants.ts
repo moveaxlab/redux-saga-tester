@@ -1,1 +1,0 @@
-export const RESET_TESTER_ACTION_TYPE = '@@RESET_TESTER';

@@ -1,6 +1,8 @@
-node_modules
-dist
-*.swp
-lib/
 .idea/
+coverage/
+dist/
+node_modules/
+
+*.swp
+*.tgz
 yarn-error.log

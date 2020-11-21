@@ -1,19 +1,19 @@
-import createSagaMiddleware from 'redux-saga';
-
+import createSagaMiddleware, { SagaMiddlewareOptions, Task } from 'redux-saga';
 import {
+  AnyAction,
+  applyMiddleware,
+  CombinedState,
   combineReducers as reduxCombineReducers,
   createStore,
-  applyMiddleware,
-  AnyAction,
+  Middleware,
   Reducer,
-  Store,
   ReducersMapObject,
+  Store,
 } from 'redux';
 import { Saga } from '@redux-saga/types';
 import { SagaMiddleware } from '@redux-saga/core';
-import SagaTester, { SagaTesterOptions } from './types';
-import { RESET_TESTER_ACTION_TYPE } from './constants';
 
+export const RESET_TESTER_ACTION_TYPE = '@@RESET_TESTER';
 export const resetAction = { type: RESET_TESTER_ACTION_TYPE };
 
 interface Action {
@@ -23,9 +23,24 @@ interface Action {
   promise?: PromiseLike<void>;
 }
 
-export default class SagaIntegrationTester<S extends object> extends SagaTester<
-  S
-> {
+export interface SagaTesterOptions<StateType> {
+  initialState?: CombinedState<StateType>;
+  reducers?: ReducersMapObject;
+  middlewares?: Middleware[];
+  combineReducers?: (
+    map: ReducersMapObject<AnyAction>
+  ) => Reducer<CombinedState<StateType>>;
+  ignoreReduxActions?: boolean;
+  options?: SagaMiddlewareOptions;
+}
+
+type SagaReturnType<S extends Saga> = S extends (
+  ...args: unknown[]
+) => Iterator<unknown, infer R>
+  ? R
+  : never;
+
+export class SagaTester<S extends object> {
   private calledActions: AnyAction[];
 
   private actionLookups: { [key: string]: Action };
@@ -42,30 +57,24 @@ export default class SagaIntegrationTester<S extends object> extends SagaTester<
       options: {},
     }
   ) {
-    super();
     const {
       reducers,
       middlewares = [],
       combineReducers = reduxCombineReducers,
       ignoreReduxActions,
       options = {},
-      initialState = { a: 'initialState' },
+      initialState,
     } = props;
     this.calledActions = [];
     this.actionLookups = {};
     this.sagaMiddleware = createSagaMiddleware(options);
 
-    const defaultReducers = (initialState: object): ReducersMapObject => {
-      const red: ReducersMapObject = {};
-      for (const [key, value] of Object.entries(initialState)) {
-        red[key] = (state: typeof value = value, _action: AnyAction) => state;
-      }
-      return red;
-    };
+    const reducerFn = reducers
+      ? combineReducers(reducers)
+      : initialState
+      ? () => initialState
+      : () => null;
 
-    const reducerFn = combineReducers(
-      reducers ?? defaultReducers(initialState)
-    );
     const finalInitialState: S = createStore(
       reducerFn,
       initialState
@@ -97,7 +106,7 @@ export default class SagaIntegrationTester<S extends object> extends SagaTester<
         // Don't monitor redux actions
       } else {
         this.calledActions.push(action);
-        const actionObj = this._addAction(action.type);
+        const actionObj = this.addAction(action.type);
         actionObj.count++;
         actionObj.callback!();
       }
@@ -112,11 +121,11 @@ export default class SagaIntegrationTester<S extends object> extends SagaTester<
     this.store = createStore(finalReducer, applyMiddleware(...allMiddlewares));
   }
 
-  _handleRootSagaException(e: Error) {
+  private handleRootSagaException(e: Error) {
     Object.values(this.actionLookups).forEach(action => action.reject!(e));
   }
 
-  _addAction(actionType: string, futureOnly = false) {
+  private addAction(actionType: string, futureOnly = false) {
     let action = this.actionLookups[actionType];
 
     if (!action || futureOnly) {
@@ -131,7 +140,7 @@ export default class SagaIntegrationTester<S extends object> extends SagaTester<
     return action;
   }
 
-  _verifyAwaitedActionsCalled() {
+  private verifyAwaitedActionsCalled() {
     Object.keys(this.actionLookups).forEach(actionType => {
       const action = this.actionLookups[actionType];
       if (action.count === 0 && action.reject) {
@@ -142,19 +151,21 @@ export default class SagaIntegrationTester<S extends object> extends SagaTester<
     });
   }
 
-  run<S extends Saga>(sagas: S, ...args: Parameters<S>) {
+  run<S extends Saga>(
+    sagas: S,
+    ...args: Parameters<S>
+  ): Promise<SagaReturnType<S>> {
     const task = this.start(sagas, ...args);
-    if (task.result != null) {
-      return task.result;
-    } else {
-      return task.toPromise();
-    }
+    return task.toPromise();
   }
 
-  start<S extends Saga>(sagas: S, ...args: Parameters<S>) {
+  /**
+   * Starts execution of the provided saga.
+   */
+  start<S extends Saga>(sagas: S, ...args: Parameters<S>): Task {
     const task = this.sagaMiddleware.run(sagas, ...args);
-    const onDone = () => this._verifyAwaitedActionsCalled();
-    const onCatch = (e: Error) => this._handleRootSagaException(e);
+    const onDone = () => this.verifyAwaitedActionsCalled();
+    const onCatch = (e: Error) => this.handleRootSagaException(e);
 
     const taskPromise = task.toPromise();
     taskPromise.then(onDone);
@@ -174,39 +185,66 @@ export default class SagaIntegrationTester<S extends object> extends SagaTester<
     }
   }
 
-  dispatch(action: AnyAction) {
+  /**
+   * Dispatches an action to the redux store.
+   */
+  dispatch<T extends AnyAction>(action: T): T {
     return this.store.dispatch(action);
   }
 
+  /**
+   * Returns the state of the redux store.
+   */
   getState(): S {
     return this.store.getState();
   }
 
-  getCalledActions() {
+  /**
+   * Returns an array of all actions dispatched.
+   */
+  getCalledActions(): AnyAction[] {
     return this.calledActions.slice(); // shallow copy
   }
 
-  getLatestCalledAction() {
+  /**
+   * Returns the last action dispatched to the store.
+   */
+  getLatestCalledAction(): AnyAction {
     return this.calledActions[this.calledActions.length - 1];
   }
 
-  getLatestCalledActions(num = 1) {
+  /**
+   * Returns the last N actions dispatched to the store.
+   * @param num The number of actions to return
+   */
+  getLatestCalledActions(num = 1): AnyAction[] {
     return this.calledActions.slice(-1 * num);
   }
 
-  wasCalled(actionType: string) {
+  /**
+   * Returns whether the specified was dispatched in the past.
+   */
+  wasCalled(actionType: string): boolean {
     const action = this.actionLookups[actionType];
 
     return action ? action.count > 0 : false;
   }
 
-  numCalled(actionType: string) {
+  /**
+   * Returns the number of times an action with the given type was dispatched.
+   */
+  numCalled(actionType: string): number {
     const action = this.actionLookups[actionType];
 
     return (action && action.count) || 0;
   }
 
-  waitFor(actionType: string, futureOnly = false) {
-    return this._addAction(actionType, futureOnly).promise!;
+  /**
+   * Returns a promise that will resolve if the specified action is dispatched to the store.
+   * @param actionType The type of the action to wait for.
+   * @param futureOnly Causes waitFor to only resolve if the action is called in the future.
+   */
+  waitFor(actionType: string, futureOnly = false): PromiseLike<void> {
+    return this.addAction(actionType, futureOnly).promise!;
   }
 }
