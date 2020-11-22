@@ -4,9 +4,14 @@
 
 Full redux environment testing helper for redux-saga.
 
-[redux-saga](https://github.com/yelouafi/redux-saga/) is a great library that provides an easy way to test your sagas step-by-step, but it's tightly coupled to the saga implementation. Try a non-breaking reorder of the internal `yield`s, and the tests will fail.
+[redux-saga](https://github.com/yelouafi/redux-saga/) is a great library that provides an easy way
+to test your sagas step-by-step, but it's tightly coupled to the saga implementation.
+Try a non-breaking reorder of the internal `yield`s, and the tests will fail.
 
-This tester library provides a full redux environment to run your sagas in, taking a black-box approach to testing. You can dispatch actions, observe the state of the store at any time, retrieve a history of actions and listen for specific actions to occur.
+This tester library provides a full redux environment to run your sagas in,
+taking a black-box approach to testing.
+You can dispatch actions, observe the state of the store at any time,
+retrieve a history of actions and listen for specific actions to occur.
 
 # Getting Started
 
@@ -24,9 +29,10 @@ $ yarn add --dev @moveaxlab/redux-saga-tester
 
 ## Basic Example
 
-Suppose we have a saga that waits for a START action, performs some async (or sync) actions (eg. fetching data from an API), and dispatches a `SUCCESS` action upon completion. Here's how we would test it:
+Suppose we have a saga that waits for a START action, performs some async (or sync) actions (eg. fetching data from an API),
+and dispatches a `SUCCESS` action upon completion. Here's how we would test it:
 
-```js
+```typescript
 import ourSaga from './saga';
 
 describe('ourSaga test', () => {
@@ -46,7 +52,7 @@ describe('ourSaga test', () => {
         const successAction = await sagaTester.waitFor(Actions.types.SUCCESS);
 
         // Check that the success action is what we expect it to be
-        expect(successAction).to.deep.equal(
+        expect(successAction).toEqual(
             Actions.actions.success({ data: expectedData })
         );
     });
@@ -57,14 +63,9 @@ This is of course an example of testing a saga that contains async actions. Gene
 
 ## Full example
 
-Can be found under the `examples` directory.
-
-```js
-import chaiAsPromised from 'chai-as-promised';
-import { call, take, put } from 'redux-saga/effects';
+```typescript
+import { call, take, put, delay } from 'redux-saga/effects';
 import SagaTester from '@moveaxlab/redux-saga-tester';
-
-chai.use(chaiAsPromised);
 
 const someValue = 'SOME_VALUE';
 const someResult = 'SOME_RESULT';
@@ -81,7 +82,7 @@ const middleware = store => next => action => next({
     meta : middlewareMeta
 });
 // options are passed to createSagaMiddleware
-const options = { onError => console.error.bind(console) }
+const options = { onError: console.error };
 const fetchApi = () => someResult;
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
@@ -89,50 +90,52 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 function* listenAndFetch() {
     yield take(fetchRequestActionType);
     const result = yield call(fetchApi);
-    yield call(delay, 500); // For async example.
+    yield delay(500); // For async example.
     yield put({ type : fetchSuccessActionType, payload : result });
 }
 
 it('Showcases the tester API', async () => {
     // Start up the saga tester
+    const reducers = combineReducers({ someKey: reducer });
+
     const sagaTester = new SagaTester({
         initialState,
-        reducers : { someKey : reducer },
-        middlewares : [middleware],
+        reducers,
+        middlewares: [middleware],
         options,
     });
     sagaTester.start(listenAndFetch);
 
     // Check that state was populated with initialState
-    expect(sagaTester.getState()).to.deep.equal(initialState);
+    expect(sagaTester.getState()).toEqual(initialState);
 
     // Dispatch the event to start the saga
-    sagaTester.dispatch({type : fetchRequestActionType});
+    sagaTester.dispatch({type: fetchRequestActionType});
 
     // Hook into the success action
     await sagaTester.waitFor(fetchSuccessActionType);
 
     // Check that all actions have the meta property from the middleware
     sagaTester.getCalledActions().forEach(action => {
-        expect(action.meta).to.equal(middlewareMeta)
+        expect(action.meta).toEqual(middlewareMeta)
     });
 
     // Check that the new state was affected by the reducer
-    expect(sagaTester.getState()).to.deep.equal({
-        someKey : someOtherValue
+    expect(sagaTester.getState()).toEqual({
+        someKey: someOtherValue,
     });
 
     // Check that the saga listens only once
     sagaTester.dispatch({ type : fetchRequestActionType });
-    expect(sagaTester.numCalled(fetchRequestActionType)).to.equal(2);
-    expect(sagaTester.numCalled(fetchSuccessActionType)).to.equal(1);
+    expect(sagaTester.numCalled(fetchRequestActionType)).toEqual(2);
+    expect(sagaTester.numCalled(fetchSuccessActionType)).toEqual(1);
 
     // Reset the state and action list, dispatch again
     // and check that it was called
     sagaTester.reset(true);
-    expect(sagaTester.wasCalled(fetchRequestActionType)).to.equal(false);
+    expect(sagaTester.wasCalled(fetchRequestActionType)).toEqual(false);
     sagaTester.dispatch({ type : fetchRequestActionType });
-    expect(sagaTester.wasCalled(fetchRequestActionType)).to.equal(true);
+    expect(sagaTester.wasCalled(fetchRequestActionType)).toEqual(true);
 })
 ```
 
@@ -144,12 +147,12 @@ Create a new SagaTester instance.
 
 1. `options: Object`
    * `initialState : Object`
-   * `reducers : Object | Function`
+   * `reducers : Function`
    * `middlewares : Array[Function]`
-   * `combineReducers : Function`
    * `ignoreReduxActions : Boolean`
    * `options : Object`
-     * Options for `createSagaMiddleware` (see [docs](https://github.com/redux-saga/redux-saga/tree/master/docs/api#createsagamiddlewareoptions)).
+     * Options for `createSagaMiddleware`
+       (see [docs](https://github.com/redux-saga/redux-saga/tree/master/docs/api#createsagamiddlewareoptions)).
 
 #### `sagaTester.start(saga, [...args])`
 Starts execution of the provided saga.
