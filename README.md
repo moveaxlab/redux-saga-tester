@@ -1,5 +1,7 @@
 # redux-saga-tester
 
+![npm (scoped)](https://img.shields.io/npm/v/@moveaxlab/redux-saga-tester)
+
 > This is a fork of redux-saga-tester with integrated TypeScript support.
 
 Full redux environment testing helper for redux-saga.
