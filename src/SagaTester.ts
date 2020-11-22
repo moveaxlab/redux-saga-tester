@@ -16,10 +16,10 @@ export const RESET_TESTER_ACTION_TYPE = '@@RESET_TESTER';
 export const resetAction = { type: RESET_TESTER_ACTION_TYPE };
 
 interface Action {
-  callback?: (value?: void | PromiseLike<void> | undefined) => void;
+  callback?: (value: AnyAction) => void;
   reject?: (e: Error) => void;
   count: number;
-  promise?: PromiseLike<void>;
+  promise?: PromiseLike<AnyAction>;
 }
 
 export interface SagaTesterOptions<StateType, A extends AnyAction> {
@@ -46,7 +46,7 @@ export class SagaTester<S, A extends AnyAction = AnyAction> {
   private store: Store;
 
   constructor(
-    props: Partial<SagaTesterOptions<S, AnyAction>> = {
+    props: Partial<SagaTesterOptions<S, A>> = {
       middlewares: [],
       ignoreReduxActions: true,
       options: {},
@@ -63,7 +63,7 @@ export class SagaTester<S, A extends AnyAction = AnyAction> {
     this.actionLookups = {};
     this.sagaMiddleware = createSagaMiddleware(options);
 
-    const reducerFn: Reducer<S> = reducers
+    const reducerFn: Reducer<S, A> = reducers
       ? reducers
       : initialState
       ? () => initialState as CombinedState<S>
@@ -71,9 +71,9 @@ export class SagaTester<S, A extends AnyAction = AnyAction> {
 
     const finalInitialState = createStore(reducerFn, initialState).getState();
 
-    const finalReducer: Reducer<S> = (
+    const finalReducer: Reducer<S, A> = (
       state: S | undefined,
-      action: AnyAction
+      action: A
     ): CombinedState<S> => {
       // reset state if requested
       if (action.type === RESET_TESTER_ACTION_TYPE) return finalInitialState;
@@ -99,7 +99,7 @@ export class SagaTester<S, A extends AnyAction = AnyAction> {
         this.calledActions.push(action);
         const actionObj = this.addAction(action.type);
         actionObj.count++;
-        actionObj.callback!();
+        actionObj.callback!(action);
       }
       return next(action);
     };
@@ -235,7 +235,7 @@ export class SagaTester<S, A extends AnyAction = AnyAction> {
    * @param actionType The type of the action to wait for.
    * @param futureOnly Causes waitFor to only resolve if the action is called in the future.
    */
-  waitFor(actionType: string, futureOnly = false): PromiseLike<void> {
+  waitFor(actionType: string, futureOnly = false): PromiseLike<AnyAction> {
     return this.addAction(actionType, futureOnly).promise!;
   }
 }

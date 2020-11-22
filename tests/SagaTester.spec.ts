@@ -235,7 +235,7 @@ describe('SagaTester', () => {
       Promise.race([promise, Promise.resolve('fail')])
     ).resolves.toEqual('fail');
     sagaTester.dispatch(someAction);
-    return expect(promise).resolves.toBeUndefined();
+    return expect(promise).resolves.toBe(someAction);
   });
 
   it('Rejects if saga completes without emiting awaited action', () => {
