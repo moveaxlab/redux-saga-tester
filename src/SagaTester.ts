@@ -3,11 +3,10 @@ import {
   AnyAction,
   applyMiddleware,
   CombinedState,
-  combineReducers as reduxCombineReducers,
   createStore,
   Middleware,
+  PreloadedState,
   Reducer,
-  ReducersMapObject,
   Store,
 } from 'redux';
 import { Saga } from '@redux-saga/types';
@@ -24,12 +23,9 @@ interface Action {
 }
 
 export interface SagaTesterOptions<StateType> {
-  initialState?: CombinedState<StateType>;
-  reducers?: ReducersMapObject;
+  initialState?: PreloadedState<StateType>;
+  reducers?: Reducer<StateType>;
   middlewares?: Middleware[];
-  combineReducers?: (
-    map: ReducersMapObject<AnyAction>
-  ) => Reducer<CombinedState<StateType>>;
   ignoreReduxActions?: boolean;
   options?: SagaMiddlewareOptions;
 }
@@ -40,7 +36,7 @@ type SagaReturnType<S extends Saga> = S extends (
   ? R
   : never;
 
-export class SagaTester<S extends object> {
+export class SagaTester<S> {
   private calledActions: AnyAction[];
 
   private actionLookups: { [key: string]: Action };
@@ -52,7 +48,6 @@ export class SagaTester<S extends object> {
   constructor(
     props: Partial<SagaTesterOptions<S>> = {
       middlewares: [],
-      combineReducers: reduxCombineReducers,
       ignoreReduxActions: true,
       options: {},
     }
@@ -60,7 +55,6 @@ export class SagaTester<S extends object> {
     const {
       reducers,
       middlewares = [],
-      combineReducers = reduxCombineReducers,
       ignoreReduxActions,
       options = {},
       initialState,
@@ -69,21 +63,18 @@ export class SagaTester<S extends object> {
     this.actionLookups = {};
     this.sagaMiddleware = createSagaMiddleware(options);
 
-    const reducerFn = reducers
-      ? combineReducers(reducers)
+    const reducerFn: Reducer<S> = reducers
+      ? reducers
       : initialState
-      ? () => initialState
-      : () => null;
+      ? () => initialState as CombinedState<S>
+      : () => ({} as CombinedState<S>);
 
-    const finalInitialState: S = createStore(
-      reducerFn,
-      initialState
-    ).getState();
+    const finalInitialState = createStore(reducerFn, initialState).getState();
 
     const finalReducer: Reducer<S> = (
       state: S | undefined,
       action: AnyAction
-    ): S => {
+    ): CombinedState<S> => {
       // reset state if requested
       if (action.type === RESET_TESTER_ACTION_TYPE) return finalInitialState;
 

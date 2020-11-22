@@ -1,5 +1,5 @@
 import { SagaTester, resetAction } from '../src/SagaTester';
-import { Reducer } from 'redux';
+import { combineReducers } from 'redux';
 
 describe('SagaTester', () => {
   const someInitialValue = 'SOME_INITIAL_VALUE';
@@ -67,11 +67,11 @@ describe('SagaTester', () => {
 
   it('Uses the supplied reducers', () => {
     const someFinalValue = 'SOME_FINAL_VALUE';
-    const reducers = {
+    const reducers = combineReducers({
       someKey: (state = someInitialValue, action: { type: string }) =>
         action.type === someActionType ? someFinalValue : state,
       someOtherKey: () => 1234,
-    };
+    });
 
     const sagaTester = new SagaTester({ reducers });
     sagaTester.dispatch(someAction);
@@ -131,10 +131,10 @@ describe('SagaTester', () => {
 
   it('Resets the state of the store to the initial state', () => {
     const someFinalValue = 'SOME_FINAL_VALUE';
-    const reducers = {
+    const reducers = combineReducers({
       someKey: (state = someInitialValue, action: { type: string }) =>
         action.type === someActionType ? someFinalValue : state,
-    };
+    });
 
     const sagaTester = new SagaTester({
       initialState: someInitialState,
@@ -155,10 +155,10 @@ describe('SagaTester', () => {
 
   it('Resets the state of the store to the initial state and clears the action list', () => {
     const someFinalValue = 'SOME_FINAL_VALUE';
-    const reducers = {
+    const reducers = combineReducers({
       someKey: (state = someInitialValue, action: { type: string }) =>
         action.type === someActionType ? someFinalValue : state,
-    };
+    });
 
     const sagaTester = new SagaTester({
       initialState: someInitialState,
@@ -175,16 +175,14 @@ describe('SagaTester', () => {
 
   it('Resets the state of the store to the initial state when using a reducer function', () => {
     const someFinalValue = 'SOME_FINAL_VALUE';
-    const reducers: Reducer = (
-      state = someInitialValue,
-      action: { type: string }
-    ) => (action.type === someActionType ? someFinalValue : state);
+    const reducers = combineReducers({
+      someKey: (state = someInitialValue, action: { type: string }) =>
+        action.type === someActionType ? someFinalValue : state,
+    });
 
     const sagaTester = new SagaTester({
       initialState: someInitialState,
-      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-      // @ts-ignore
-      reducers: { someKey: reducers },
+      reducers,
     });
     sagaTester.dispatch(someAction);
     expect(sagaTester.getState()).toStrictEqual({ someKey: someFinalValue });
