@@ -22,9 +22,9 @@ interface Action {
   promise?: PromiseLike<void>;
 }
 
-export interface SagaTesterOptions<StateType> {
+export interface SagaTesterOptions<StateType, A extends AnyAction> {
   initialState?: PreloadedState<StateType>;
-  reducers?: Reducer<StateType>;
+  reducers?: Reducer<StateType, A>;
   middlewares?: Middleware[];
   ignoreReduxActions?: boolean;
   options?: SagaMiddlewareOptions;
@@ -36,7 +36,7 @@ type SagaReturnType<S extends Saga> = S extends (
   ? R
   : never;
 
-export class SagaTester<S> {
+export class SagaTester<S, A extends AnyAction = AnyAction> {
   private calledActions: AnyAction[];
 
   private actionLookups: { [key: string]: Action };
@@ -46,7 +46,7 @@ export class SagaTester<S> {
   private store: Store;
 
   constructor(
-    props: Partial<SagaTesterOptions<S>> = {
+    props: Partial<SagaTesterOptions<S, AnyAction>> = {
       middlewares: [],
       ignoreReduxActions: true,
       options: {},
