@@ -1,6 +1,8 @@
 # redux-saga-tester
 
 ![npm (scoped)](https://img.shields.io/npm/v/@moveaxlab/redux-saga-tester)
+[![Build Status](https://travis-ci.com/moveaxlab/redux-saga-tester.svg?branch=master)](https://travis-ci.com/moveaxlab/redux-saga-tester)
+[![Coverage Status](https://coveralls.io/repos/github/moveaxlab/redux-saga-tester/badge.svg?branch=master)](https://coveralls.io/github/moveaxlab/redux-saga-tester?branch=master)
 
 > This is a fork of redux-saga-tester with integrated TypeScript support.
 
