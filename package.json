@@ -37,6 +37,7 @@
     "@moveaxlab/eslint-config": "^0.4.0",
     "@types/jest": "^26.0.15",
     "@types/redux-saga": "^0.10.5",
+    "coveralls": "^3.1.0",
     "eslint": "6.0.0",
     "husky": "^4.3.0",
     "jest": "^26.0.1",
